@@ -1,6 +1,7 @@
 """
 .gitignore for RAG System
 """
+!README.md
 
 # Python
 __pycache__/
