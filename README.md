@@ -3,7 +3,10 @@
 Production-ready modular Retrieval-Augmented Generation (RAG) platform built using Python and modern ML infrastructure. The system is designed using OOP architecture, hybrid retrieval strategies, and evaluation observability to ensure reliable performance. 
 
 ## System Architecture
-...goes here...
+![User-Driven Query-2026-03-11-041244](https://github.com/user-attachments/assets/e48bb800-1bba-4768-8772-6d4585212557)
+
+
+
 
 ### Component Details
 
@@ -14,6 +17,9 @@ Production-ready modular Retrieval-Augmented Generation (RAG) platform built usi
 - **TextLoader**: Loads plain text files
 - **URLLoader**: Fetches and parses web content
 - **DataFrameLoader**: Ingests pandas DataFrames
+- **Recursive Chunking**: Intelligent text splitting preserving semantic boundaries (200 char chunks, 40 char overlap).
+- **Unique ID Generation**: Document ID + chunk index + content hash for ChromaDB compatibility.
+- **Metadata Preservation**: Maintains source information and custom metadata.
 
 #### 2. **Embeddings Module** (`app/embeddings/`)
 - Uses **Sentence Transformers** for semantic embeddings
@@ -199,7 +205,6 @@ CHUNK_OVERLAP = 50
 ```
 rag-assistant-fastapi/
 ├── app/
-│   ├── __init__.py
 │   ├── config/
 │   │   └── settings.py              # Central configuration
 │   ├── models/
