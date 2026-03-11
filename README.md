@@ -1,11 +1,23 @@
 # Production RAG Assistant
 
-Production-ready modular Retrieval-Augmented Generation (RAG) platform built using Python and modern ML infrastructure. The system is designed using OOP architecture, hybrid retrieval strategies, and evaluation observability to ensure reliable performance. 
+A production-ready, modular Retrieval-Augmented Generation (RAG) system built with FastAPI, featuring advanced chunking, hybrid retrieval, evaluation metrics, and a frontend interface. Designed for scalable document processing, semantic search, and AI-powered question answering. 
+
+## Features
+
+- **Modular Architecture**: Clean separation of concerns with dedicated modules for ingestion, embeddings, retrieval, reranking, generation, and evaluation.
+- **Advanced Document Processing**: Recursive text chunking with semantic boundary preservation, support for PDFs, CSVs, DOCX, URLs, and plain text.
+- **Hybrid Retrieval**: Combines semantic vector search with BM25 keyword matching for optimal relevance.
+- **Reranking**: Cross-encoder based reranking for improved answer quality.
+- **LLM Integration**: Lightweight SmolLM2 model for efficient generation on various devices (CPU/GPU/MPS).
+- **Evaluation Framework**: RAGAS metrics for comprehensive answer quality assessment.
+- **Experiment Tracking**: MLFlow integration for monitoring and analysis.
+- **Frontend**: Interactive Streamlit dashboard.
+- **RESTful API**: FastAPI-powered endpoints for all operations.
+- **Persistent Storage**: ChromaDB vector database with metadata support.
+- **Production Ready**: Configurable settings, logging, error handling, and scalability considerations. 
 
 ## System Architecture
 ![User-Driven Query-2026-03-11-041244](https://github.com/user-attachments/assets/e48bb800-1bba-4768-8772-6d4585212557)
-
-
 
 
 ### Component Details
@@ -84,7 +96,8 @@ Production-ready modular Retrieval-Augmented Generation (RAG) platform built usi
 
 1. **Clone the repository**
 ```bash
-cd /Projects/src/rag-assistant-fastapi
+git clone <repository-url>
+cd rag-assistant-fastapi
 ```
 
 2. **Create virtual environment**
@@ -96,6 +109,11 @@ source .rag/bin/activate  # On macOS/Linux
 3. **Install dependencies**
 ```bash
 pip install -r requirements.txt
+```
+
+4. **Verify installation**
+```bash
+python -c "from app.rag_system import RAGSystem; print('Installation successful!')"
 ```
 
 ### Basic Usage
@@ -129,16 +147,39 @@ print(f"Reranked {len(response.reranked_documents)} documents")
 python example.py
 ```
 
-#### 3. **Start FastAPI Server**
+#### 3. Start the FastAPI Server
 
 ```bash
 python main.py
 ```
 
-The API will be available at `http://localhost:8000`
+- API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
+- HTML Frontend: http://localhost:8000/frontend
+- ReDoc: http://localhost:8000/redoc
 
-- API Documentation: `http://localhost:8000/docs`
-- Alternative docs: `http://localhost:8000/redoc`
+### 4. Launch Streamlit Dashboard
+
+```bash
+streamlit run front-end-streamlit/app.py
+```
+
+- Dashboard: http://localhost:8501
+  
+### 5. Run Evaluation Experiments
+
+```bash
+python run_evaluation_experiment.py [--csv path/to/file] [--output results_dir] [--async] [--concurrency N]
+```
+
+- `--csv`: path to the CSV dataset (default `app/evaluation/datasets/hf_doc_qa_eval.csv`).
+- `--output`: directory where results will be written.
+- `--async`: process samples concurrently using `asyncio` and a thread pool.  **Note:** MLFlow tracing uses nested runs; enabling async can improve throughput but may revert to sequential logging when MLFlow is enabled.
+- `--concurrency`: maximum number of parallel workers when `--async` is used (default `5`).
+
+The script evaluates the RAG system on benchmark questions, logs metrics
+and answers to MLFlow, and writes a detailed CSV summary (including
+`mlflow_trace_id`/`url` columns).
 
 ## 📚 API Endpoints
 
