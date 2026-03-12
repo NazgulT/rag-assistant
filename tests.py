@@ -161,5 +161,41 @@ class TestCollectionStats:
         assert stats["total_chunks"] > 0
 
 
+class TestAsyncSupport:
+    """Verify that async wrappers behave and can run without error."""
+
+    @pytest.mark.asyncio
+    async def test_answer_query_async(self, rag_system):
+        # ingest a dummy document so retrieval returns something
+        rag_system.ingest_document(
+            source="Asynchronous example document",
+            source_type="text",
+        )
+        response = await rag_system.answer_query_async(
+            query="example",
+            k_retrieve=1,
+            k_rerank=1,
+        )
+        assert isinstance(response, RAGResponse)
+        assert response.query == "example"
+
+    @pytest.mark.asyncio
+    async def test_evaluation_experiment_async(self, tmp_path):
+        # create a minimal CSV dataset
+        csv_file = tmp_path / "mini.csv"
+        csv_file.write_text("question,expected_answer\nWhat is AI?,Artificial intelligence")
+
+        from evaluation_experiment import run_evaluation_experiment
+
+        results_file = await asyncio.to_thread(
+            run_evaluation_experiment,
+            str(csv_file),
+            str(tmp_path),
+            True,  # async_mode
+            2,
+        )
+        assert Path(results_file).exists()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

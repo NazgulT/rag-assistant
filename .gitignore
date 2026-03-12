@@ -1,7 +1,7 @@
 """
 .gitignore for RAG System
 """
-!README.md
+
 
 # Python
 __pycache__/
@@ -91,3 +91,13 @@ Thumbs.db
 
 #Bash
 *.sh
+
+#Documents for testing
+docs/
+
+#Certain files in src
+evaluation_experiment copy.py
+demo_advanced_features.py
+
+#Evaluation results
+evaluation_results/

@@ -2,8 +2,12 @@
 """
 Main entry point for RAG System API.
 """
+import os
 import sys
 from pathlib import Path
+
+# Disable tokenizers parallelism to avoid warnings
+os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 
 # Add project root to path
 project_root = Path(__file__).parent

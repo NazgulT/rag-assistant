@@ -40,7 +40,7 @@ app.add_middleware(
 )
 
 # Mount static files
-app.mount("/static", StaticFiles(directory=Path(__file__).parent.parent.parent / "front-end"), name="static")
+app.mount("/static", StaticFiles(directory=Path(__file__).parent.parent.parent / "front-end-streamlit"), name="static")
 
 # Initialize RAG system
 rag_system = None

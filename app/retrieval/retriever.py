@@ -207,6 +207,9 @@ class HybridRetriever(Retriever):
     def set_documents_for_bm25(self, documents: List[Dict[str, Any]]):
         """Set documents for BM25 indexing."""
         self.bm25_retriever.update_documents(documents)
+        logger.info(
+            f"Updated BM25 retriever with {len(documents)} documents"
+        )
 
     def _normalize_scores(self, results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Normalize scores to 0-1 range."""

@@ -46,7 +46,7 @@ class RAGSettings(BaseSettings):
     LLM_TOP_P: float = 0.95
 
     # Vector Database (ChromaDB)
-    CHROMA_COLLECTION_NAME: str = "rag_documents"
+    CHROMA_COLLECTION_NAME: str = "hf_docs_v1"
     CHROMA_DISTANCE_METRIC: str = "cosine"
 
     # Logging

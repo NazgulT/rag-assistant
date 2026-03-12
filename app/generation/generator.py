@@ -126,9 +126,9 @@ class HuggingFaceGenerator(LLMGenerator):
             outputs = self.model.generate(
                 **inputs,
                 max_new_tokens=max_tokens,
-                temperature=temperature,
-                top_p=self.top_p,
-                do_sample=True,
+                #temperature=temperature,
+                #top_p=self.top_p,
+                do_sample=False,
                 pad_token_id=self.tokenizer.eos_token_id,
             )
 
@@ -138,12 +138,15 @@ class HuggingFaceGenerator(LLMGenerator):
                 generated_tokens, skip_special_tokens=True
             )
 
-            # Remove prompt from output
-            #if generated_text.startswith(prompt):
-               # generated_text = generated_text[len(prompt):].strip()
-
-            logger.debug(f"Generated text of length {len(generated_text)}")
-            return generated_text
+            logger.debug(f"Generated text: {generated_text[:100]}...")
+            
+            # Clean up generated text: remove extra newlines and spaces
+            cleaned_text = generated_text.strip()
+            # Replace multiple newlines with single space
+            cleaned_text = ' '.join(cleaned_text.split())
+            
+            logger.debug(f"Generated text of length {len(cleaned_text)}")
+            return cleaned_text
         except Exception as e:
             logger.error(f"Error generating text: {str(e)}")
             raise
@@ -173,7 +176,14 @@ class RAGGenerator:
         Returns:
             Formatted prompt
         """
-        context_text = "\n\n".join([f"Context {i+1}:\n{passage}" for i, passage in enumerate(context)])
+        # Clean and format context passages
+        clean_context = []
+        for passage in context:
+            # Remove extra newlines from each passage
+            clean_passage = ' '.join(passage.split())
+            clean_context.append(clean_passage)
+        
+        context_text = "\n\n".join([f"Context {i+1}: {passage}" for i, passage in enumerate(clean_context)])
 
         # Chat-style prompt (important for instruct models)
         messages = [
@@ -181,13 +191,14 @@ class RAGGenerator:
                 "role": "system",
                 "content": (
                     "You are a helpful AI assistant. "
-                    "Answer strictly using the provided context. Do not add any new knowledge."
-                    "If the answer is not in the context, say you don't know."
+                    "Answer strictly using the provided context. Do not add any new knowledge. "
+                    "If the answer is not in the context, say you don't know. "
+                    "Provide a clear, concise answer without unnecessary line breaks."
                 ),
             },
             {
                 "role": "user",
-                "content": f"Context:\n{context_text}\n\nQuestion:\n{query}"
+                "content": f"Context:\n{context_text}\n\nQuestion: {query}"
             },
         ]
 

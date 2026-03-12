@@ -1,12 +1,20 @@
 """
 Main RAG system orchestrator.
 """
+import os
 import time
+import asyncio
 from typing import List, Dict, Any, Optional
+
+# Disable tokenizers parallelism to avoid deadlock warnings
+os.environ.setdefault('TOKENIZERS_PARALLELISM', 'false')
+
 import pandas as pd
+from pathlib import Path
 from app.logging.logger import get_logger
 from app.config.settings import settings
 from app.ingestion.loaders import DocumentIngestionManager
+from app.ingestion.chunking import RecursiveChunker
 from app.embeddings.embedding import EmbeddingManager
 from app.storage.chroma_store import ChromaVectorStore
 from app.retrieval.retriever import HybridRetriever
@@ -48,6 +56,14 @@ class RAGSystem:
         self.reranker = CrossEncoderReranker()
         self.generator = RAGGenerator(HuggingFaceGenerator())
         self.evaluator = RAGEvaluator()
+        
+                
+        # Initialize recursive chunker
+        self.chunker = RecursiveChunker(
+            chunk_size=settings.CHUNK_SIZE,
+            chunk_overlap=settings.CHUNK_OVERLAP,
+        )
+        
 
         # MLFlow tracking
         self.use_mlflow = use_mlflow
@@ -116,25 +132,14 @@ class RAGSystem:
             else:
                 raise ValueError(f"Unsupported source type: {source_type}")
 
-            # Chunk document
-            chunks = chunk_text(
+            # Chunk document using recursive chunker
+            
+            doc_chunks = self.chunker.chunk_document(
                 doc["content"],
-                chunk_size=chunk_size,
-                overlap=chunk_overlap,
+                doc["id"],
+                doc["metadata"],
             )
-
-            # Create document chunks
-            doc_chunks = []
-            for i, chunk_content in enumerate(chunks):
-                chunk = DocumentChunk(
-                    id=generate_id(f"{doc['id']}_{i}", "chunk"),
-                    document_id=doc["id"],
-                    content=chunk_content,
-                    chunk_index=i,
-                    metadata=doc["metadata"],
-                )
-                doc_chunks.append(chunk)
-
+            
             # Encode chunks
             chunk_texts = [chunk.content for chunk in doc_chunks]
             embeddings = self.embedding_manager.encode_documents(chunk_texts)
@@ -372,6 +377,55 @@ class RAGSystem:
             logger.error(f"Error evaluating answer: {str(e)}")
             raise
 
+    # asynchronous helpers ------------------------------------------------
+    async def answer_query_async(
+        self,
+        query: str,
+        k_retrieve: int = settings.N_RETRIEVE,
+        k_rerank: int = settings.N_RERANK,
+        use_reranking: bool = True,
+    ) -> RAGResponse:
+        """Async wrapper around ``answer_query`` using a thread pool."""
+        return await asyncio.to_thread(
+            self.answer_query,
+            query,
+            k_retrieve,
+            k_rerank,
+            use_reranking,
+        )
+
+    async def retrieve_async(
+        self, query: str, k: int = settings.N_RETRIEVE
+    ) -> List[Dict[str, Any]]:
+        return await asyncio.to_thread(self.retrieve, query, k)
+
+    async def rerank_async(
+        self, query: str, documents: List[Dict[str, Any]], k: int = settings.N_RERANK
+    ) -> List[Dict[str, Any]]:
+        return await asyncio.to_thread(self.rerank, query, documents, k)
+
+    async def generate_answer_async(
+        self,
+        query: str,
+        context: List[str],
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        return await asyncio.to_thread(
+            self.generate_answer, query, context, max_tokens, temperature
+        )
+
+    async def evaluate_answer_async(
+        self,
+        query: str,
+        answer: str,
+        contexts: List[str],
+        ground_truth: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        return await asyncio.to_thread(
+            self.evaluate_answer, query, answer, contexts, ground_truth
+        )
+
     def get_collection_stats(self) -> Dict[str, Any]:
         """Get collection statistics."""
         try:
@@ -381,3 +435,8 @@ class RAGSystem:
         except Exception as e:
             logger.error(f"Error getting collection stats: {str(e)}")
             raise
+
+    def create_ground_truth(self, dataset_path: Path):
+        """Create ground truth dataset for evaluation."""
+        
+        return self.evaluator.create_ragas_dataset(dataset_path)

@@ -1,10 +1,18 @@
 """
 Evaluation module for RAGAS-based assessment.
 """
+
+import asyncio
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from app.logging.logger import get_logger
 from app.config.settings import settings
+
+
+import urllib.request
+from pathlib import Path
+#from ragas import Dataset
+import pandas as pd
 
 logger = get_logger(__name__)
 
@@ -246,3 +254,15 @@ class RAGEvaluator:
 
         logger.info(f"Computed aggregate metrics: {len(aggregate)} values")
         return aggregate
+
+'''
+    def create_ragas_dataset(dataset_path: Path) -> Dataset:
+        dataset = Dataset(name="hf_doc_qa_eval", backend="local/csv", root_dir=".")
+        df = pd.read_csv(dataset_path)
+
+        for _, row in df.iterrows():
+            dataset.append({"question": row["question"], "expected_answer": row["expected_answer"]})
+
+        dataset.save()
+        return dataset
+'''
