@@ -1,6 +1,6 @@
-# RAG Assistant FastAPI
+# Production RAG Assistant
 
-A production-ready, modular Retrieval-Augmented Generation (RAG) system built with FastAPI, featuring advanced chunking, hybrid retrieval, evaluation metrics, and multiple frontend interfaces. Designed for scalable document processing, semantic search, and AI-powered question answering.
+A production-ready, modular Retrieval-Augmented Generation (RAG) system built with FastAPI, featuring advanced chunking, hybrid retrieval, evaluation metrics, and a frontend interface. Designed for scalable document processing, semantic search, and AI-powered question answering. 
 
 ## Features
 
@@ -11,135 +11,88 @@ A production-ready, modular Retrieval-Augmented Generation (RAG) system built wi
 - **LLM Integration**: Lightweight SmolLM2 model for efficient generation on various devices (CPU/GPU/MPS).
 - **Evaluation Framework**: RAGAS metrics for comprehensive answer quality assessment.
 - **Experiment Tracking**: MLFlow integration for monitoring and analysis.
-- **Multiple Frontends**: Web-based HTML interface and interactive Streamlit dashboard.
+- **Frontend**: Interactive Streamlit dashboard.
 - **RESTful API**: FastAPI-powered endpoints for all operations.
 - **Persistent Storage**: ChromaDB vector database with metadata support.
 - **Production Ready**: Configurable settings, logging, error handling, and scalability considerations. 
 
-## Architecture
+## System Architecture
+![User-Driven Query-2026-03-11-041244](https://github.com/user-attachments/assets/e48bb800-1bba-4768-8772-6d4585212557)
 
-The system follows a modular pipeline architecture with clear separation between data ingestion, retrieval, and generation components.
-
-```mermaid
-graph TB
-    A[User] --> B{Frontend}
-    B --> C[HTML Interface]
-    B --> D[Streamlit Dashboard]
-    C --> E[FastAPI Server]
-    D --> E
-    E --> F[API Endpoints]
-
-    F --> G[Ingestion Pipeline]
-    G --> H[Document Loaders]
-    H --> I[Recursive Chunking]
-    I --> J[Embedding Generation]
-    J --> K[ChromaDB Storage]
-
-    F --> L[Query Pipeline]
-    L --> M[Query Embedding]
-    M --> N[Hybrid Retrieval]
-    N --> O[BM25 Search]
-    N --> P[Semantic Search]
-    O --> Q[Score Fusion]
-    P --> Q
-    Q --> R[Reranking]
-    R --> S[LLM Generation]
-    S --> T[Response]
-
-    F --> U[Evaluation Pipeline]
-    U --> V[RAGAS Metrics]
-    V --> W[Answer Quality Scores]
-
-    E --> X[MLFlow Tracking]
-    X --> Y[Experiment Logs]
-    X --> Z[Metrics & Artifacts]
-
-    subgraph "Core Modules"
-        AA[Config] --> BB[Settings]
-        CC[Models] --> DD[Schemas]
-        EE[Utils] --> FF[Helpers]
-        GG[Logging] --> HH[Logger]
-    end
-
-    style A fill:#e1f5fe
-    style E fill:#c8e6c9
-    style K fill:#fff3e0
-    style T fill:#fce4ec
-```
 
 ### Component Details
 
-#### 1. **API Layer** (`app/api/`)
-- **FastAPI Application**: RESTful endpoints with automatic OpenAPI documentation.
-- **Static File Serving**: Hosts HTML frontend at `/frontend`.
-- **CORS Support**: Configured for cross-origin requests.
-- **Request Validation**: Pydantic models for all inputs/outputs.
-
-#### 2. **Document Ingestion** (`app/ingestion/`)
-- **Multiple Loaders**: PDF, CSV, DOCX, URL, DataFrame, and plain text support.
+#### 1. **Document Ingestion Module** (`app/ingestion/`)
+- **PDFLoader**: Extracts text from PDF files
+- **CSVLoader**: Converts CSV data to structured text
+- **DocxLoader**: Extracts text from Word documents
+- **TextLoader**: Loads plain text files
+- **URLLoader**: Fetches and parses web content
+- **DataFrameLoader**: Ingests pandas DataFrames
 - **Recursive Chunking**: Intelligent text splitting preserving semantic boundaries (200 char chunks, 40 char overlap).
 - **Unique ID Generation**: Document ID + chunk index + content hash for ChromaDB compatibility.
 - **Metadata Preservation**: Maintains source information and custom metadata.
 
-#### 3. **Embeddings** (`app/embeddings/`)
-- **Sentence Transformers**: all-MiniLM-L6-v2 model (384 dimensions).
-- **Batch Processing**: Efficient encoding of multiple texts.
-- **Device Agnostic**: Supports CPU, GPU, and MPS acceleration.
+#### 2. **Embeddings Module** (`app/embeddings/`)
+- Uses **Sentence Transformers** for semantic embeddings
+- Generates 384-dimensional embeddings (all-MiniLM-L6-v2)
+- Batch processing for efficiency
+- Device-agnostic (CPU, GPU, MPS)
 
-#### 4. **Vector Storage** (`app/storage/`)
-- **ChromaDB**: Persistent vector database with HNSW indexing.
-- **Upsert Operations**: Handles duplicate prevention with unique IDs.
-- **Metadata Filtering**: Query-time filtering capabilities.
-- **Collection Management**: Organized storage with collection namespacing.
+#### 3. **Vector Storage** (`app/storage/`)
+- **ChromaDB** with persistent storage
+- HNSW indexing for fast similarity search
+- Cosine distance metric
+- Metadata support for filtering
+- Collection management
 
-#### 5. **Retrieval Strategies** (`app/retrieval/`)
-- **Semantic Retrieval**: Cosine similarity on embeddings.
-- **BM25 Retrieval**: TF-IDF based keyword matching.
-- **Hybrid Retrieval**: Weighted combination (default: 60% semantic, 40% BM25).
-- **Score Normalization**: Min-max scaling for fusion.
+#### 4. **Retrieval Module** (`app/retrieval/`)
+- **Semantic Retriever**: Vector similarity search
+- **BM25 Retriever**: Keyword-based search
+- **Hybrid Retriever**: Combines semantic + BM25 with configurable weights
+  - Default: 60% semantic, 40% BM25
+  - Score normalization and fusion
 
-#### 6. **Reranking** (`app/reranking/`)
-- **Cross-Encoder Model**: mmarco-MiniLMv2-L12-H384-v1 for pairwise scoring.
-- **Top-K Selection**: Re-ranks retrieved documents for quality.
-- **Threshold Filtering**: Optional score-based filtering.
+#### 5. **Reranking Module** (`app/reranking/`)
+- **CrossEncoderReranker**: Uses cross-encoder models for fine-grained relevance scoring
+- Re-ranks top-k documents for improved quality
+- Threshold-based filtering
 
-#### 7. **Generation** (`app/generation/`)
-- **SmolLM2-1.7B-Instruct**: Lightweight transformer model.
-- **Context-Aware Prompting**: Structured prompts with retrieved context.
-- **Configurable Parameters**: Temperature, max tokens, device selection.
+#### 6. **LLM Generation Module** (`app/generation/`)
+- **HuggingFace Transformers** integration
+- **SmolLM2-1.7B-Instruct** for lightweight inference
+- Context-aware prompt engineering
+- Configurable temperature and max tokens
+- Supports CPU, GPU, and MPS devices
 
-#### 8. **Evaluation** (`app/evaluation/`)
-- **RAGAS Framework**: Comprehensive metrics suite.
-  - Answer Relevancy: Semantic similarity to query.
-  - Faithfulness: Factual consistency with context.
-  - Context Precision: Retrieved document relevance.
-  - Context Recall: Ground truth coverage.
-- **Batch Evaluation**: Process multiple query-answer pairs.
-- **CSV Export**: Results saved for analysis.
+#### 7. **Evaluation Module** (`app/evaluation/`)
+- **RAGAS Metrics Integration**
+  - Answer Relevancy
+  - Faithfulness
+  - Context Precision
+  - Context Recall
+- Batch evaluation support
+- Aggregate metric computation
 
-#### 9. **Experiment Tracking** (`app/logging/`)
-- **MLFlow Integration**: Automatic run tracking and artifact logging.
-- **Trace URLs**: Direct links to detailed experiment views.
-- **Performance Metrics**: Timing and quality measurements.
-- **Parameter Logging**: Configuration tracking.
+#### 8. **Experiment Tracking** (`app/logging/`)
+- **MLFlow Integration**
+  - Run tracking
+  - Parameter logging
+  - Metric logging
+  - Artifact storage
 
-#### 10. **Frontends**
-- **HTML Interface** (`frond-end/`): Static web app served by FastAPI.
-- **Streamlit Dashboard** (`front-end-streamlit/`): Interactive Python app for exploration.
+#### 9. **Configuration Management** (`app/config/`)
+- Centralized settings using Pydantic
+- Environment variable support
+- Sensible defaults for all parameters
 
-#### 11. **Configuration** (`app/config/`)
-- **Pydantic Settings**: Type-safe configuration management.
-- **Environment Variables**: Secure credential handling.
-- **Validation**: Runtime configuration validation.
-
-## Installation
+## 🚀 Quick Start
 
 ### Prerequisites
 - Python 3.8+
 - pip or conda
-- Git
 
-### Setup
+### Installation
 
 1. **Clone the repository**
 ```bash
@@ -150,9 +103,7 @@ cd rag-assistant-fastapi
 2. **Create virtual environment**
 ```bash
 python -m venv .rag
-source .rag/bin/activate  # macOS/Linux
-# or
-.rag\Scripts\activate     # Windows
+source .rag/bin/activate  # On macOS/Linux
 ```
 
 3. **Install dependencies**
@@ -165,9 +116,38 @@ pip install -r requirements.txt
 python -c "from app.rag_system import RAGSystem; print('Installation successful!')"
 ```
 
-## Usage
+### Basic Usage
 
-### 1. Start the FastAPI Server
+#### 1. **As a Library**
+
+```python
+from app.rag_system import RAGSystem
+
+# Initialize RAG system
+rag = RAGSystem(use_mlflow=True)
+
+# Ingest a document
+result = rag.ingest_document(
+    source="path/to/document.pdf",
+    source_type="file",
+    metadata={"author": "John Doe"}
+)
+
+# Query the system
+response = rag.answer_query("What is machine learning?")
+
+print(f"Answer: {response.answer}")
+print(f"Retrieved {len(response.retrieved_documents)} documents")
+print(f"Reranked {len(response.reranked_documents)} documents")
+```
+
+#### 2. **Run Example Script**
+
+```bash
+python example.py
+```
+
+#### 3. Start the FastAPI Server
 
 ```bash
 python main.py
@@ -178,35 +158,15 @@ python main.py
 - HTML Frontend: http://localhost:8000/frontend
 - ReDoc: http://localhost:8000/redoc
 
-### 2. Launch Streamlit Dashboard
+### 4. Launch Streamlit Dashboard
 
 ```bash
 streamlit run front-end-streamlit/app.py
 ```
 
 - Dashboard: http://localhost:8501
-
-### 3. Use as a Python Library
-
-```python
-from app.rag_system import RAGSystem
-
-# Initialize
-rag = RAGSystem(use_mlflow=True)
-
-# Ingest documents
-rag.ingest_document(
-    source="path/to/document.pdf",
-    source_type="file",
-    metadata={"author": "John Doe"}
-)
-
-# Query
-response = rag.answer_query("What is machine learning?")
-print(f"Answer: {response.answer}")
-```
-
-### 4. Run Evaluation Experiments
+  
+### 5. Run Evaluation Experiments
 
 ```bash
 python run_evaluation_experiment.py [--csv path/to/file] [--output results_dir] [--async] [--concurrency N]
@@ -221,63 +181,40 @@ The script evaluates the RAG system on benchmark questions, logs metrics
 and answers to MLFlow, and writes a detailed CSV summary (including
 `mlflow_trace_id`/`url` columns).
 
-## API Documentation
+## 📚 API Endpoints
 
-### Core Endpoints
+### Health & Info
+- `GET /health` - Health check
+- `GET /api/v1/info` - System information
+- `GET /api/v1/collections/stats` - Collection statistics
 
-#### Health & System Info
-- `GET /health` - System health check
-- `GET /api/v1/info` - System configuration and status
-- `GET /api/v1/collections/stats` - Vector database statistics
+### Document Ingestion
+- `POST /api/v1/documents/ingest-file` - Ingest uploaded file
+- `POST /api/v1/documents/ingest-url` - Ingest web URL
+- `POST /api/v1/documents/ingest-text` - Ingest plain text
 
-#### Document Ingestion
-- `POST /api/v1/documents/ingest-file` - Upload and ingest file (PDF, DOCX, TXT, CSV)
-- `POST /api/v1/documents/ingest-url` - Ingest content from URL
-- `POST /api/v1/documents/ingest-text` - Ingest plain text with metadata
+### Retrieval & Generation
+- `POST /api/v1/query` - Complete RAG pipeline (retrieve → rerank → generate)
+- `POST /api/v1/retrieve` - Retrieve documents only
+- `POST /api/v1/rerank` - Rerank documents
 
-#### Query Operations
-- `POST /api/v1/query` - Full RAG pipeline (retrieve → rerank → generate)
-- `POST /api/v1/retrieve` - Document retrieval only
-- `POST /api/v1/rerank` - Rerank provided documents
+### Evaluation
+- `POST /api/v1/evaluate` - Evaluate answer with RAGAS metrics
 
-#### Evaluation
-- `POST /api/v1/evaluate` - Evaluate answer quality with RAGAS metrics
+## ⚙️ Configuration
 
-### Example API Usage
-
-```bash
-# Ingest a document
-curl -X POST "http://localhost:8000/api/v1/documents/ingest-text" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "Machine learning is a subset of AI...",
-    "metadata": {"source": "example"}
-  }'
-
-# Query the system
-curl -X POST "http://localhost:8000/api/v1/query" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "What is machine learning?",
-    "k_retrieve": 10,
-    "k_rerank": 5
-  }'
-```
-
-## Configuration
-
-Key settings in `app/config/settings.py`:
+Edit `app/config/settings.py` to customize:
 
 ```python
-# Document Processing
-CHUNK_SIZE = 200  # Recursive chunking size
-CHUNK_OVERLAP = 40  # Overlap between chunks
+# Embeddings
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+EMBEDDING_DIMENSION = 384
 
 # Retrieval
 N_RETRIEVE = 10
-RETRIEVAL_TYPE = "hybrid"
-SEMANTIC_WEIGHT = 0.6
-BM25_WEIGHT = 0.4
+RETRIEVAL_TYPE = "hybrid"  # hybrid, semantic, bm25
+BM25_K1 = 1.5
+BM25_B = 0.75
 
 # Reranking
 RERANKER_MODEL = "cross-encoder/mmarco-MiniLMv2-L12-H384-v1"
@@ -289,83 +226,61 @@ LLM_DEVICE = "mps"  # cpu, cuda, mps
 LLM_TEMPERATURE = 0.7
 LLM_MAX_TOKENS = 512
 
-# Storage
-CHROMA_PERSIST_DIR = "data/chroma_db"
-COLLECTION_NAME = "rag_documents"
+# Document Processing
+CHUNK_SIZE = 512
+CHUNK_OVERLAP = 50
 ```
 
-## Performance Benchmarks
+## 📊 Performance Characteristics
 
-| Operation | Time | Notes |
-|-----------|------|-------|
-| Document Ingestion (1 page PDF) | ~2-3s | Includes chunking + embedding |
-| Semantic Retrieval (10k docs) | <100ms | HNSW indexing |
-| BM25 Retrieval | <50ms | In-memory |
-| Reranking (10 docs) | ~500ms | Cross-encoder |
-| LLM Generation (512 tokens) | ~2-5s | SmolLM2 on CPU |
+| Component | Model Size | Performance | Device |
+|-----------|-----------|-------------|--------|
+| Embeddings | 22M | ~1000 texts/s | CPU/GPU/MPS |
+| Retrieval (Semantic) | N/A | <100ms | RAM |
+| Retrieval (BM25) | N/A | <50ms | RAM |
+| Reranking | 33M | ~500ms for 10 docs | CPU/GPU |
+| LLM Generation | 1.7B | ~2-5s per query | CPU/MPS |
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 rag-assistant-fastapi/
 ├── app/
-│   ├── api/
-│   │   ├── main.py              # FastAPI app with endpoints
-│   │   └── __init__.py
 │   ├── config/
-│   │   ├── settings.py          # Configuration management
-│   │   └── __init__.py
-│   ├── embeddings/
-│   │   ├── embedding.py         # Embedding generation
-│   │   └── __init__.py
-│   ├── evaluation/
-│   │   ├── evaluator.py         # RAGAS evaluation
-│   │   └── __init__.py
-│   ├── generation/
-│   │   ├── generator.py         # LLM generation
-│   │   └── __init__.py
-│   ├── ingestion/
-│   │   ├── chunking.py          # Recursive chunking
-│   │   ├── loaders.py           # Document loaders
-│   │   └── __init__.py
-│   ├── logging/
-│   │   ├── logger.py            # Logging setup
-│   │   ├── mlflow_tracker.py    # MLFlow integration
-│   │   └── __init__.py
+│   │   └── settings.py              # Central configuration
 │   ├── models/
-│   │   ├── schemas.py           # Pydantic models
-│   │   └── __init__.py
-│   ├── rag_system.py            # Main orchestrator
-│   ├── reranking/
-│   │   ├── reranker.py          # Reranking logic
-│   │   └── __init__.py
-│   ├── retrieval/
-│   │   ├── retriever.py         # Retrieval strategies
-│   │   └── __init__.py
+│   │   └── schemas.py               # Pydantic models
+│   ├── ingestion/
+│   │   └── loaders.py               # Document loaders
+│   ├── embeddings/
+│   │   └── embedding.py             # Embedding generation
 │   ├── storage/
-│   │   ├── chroma_store.py      # ChromaDB interface
-│   │   └── __init__.py
+│   │   └── chroma_store.py          # Vector storage
+│   ├── retrieval/
+│   │   └── retriever.py             # Retrieval strategies
+│   ├── reranking/
+│   │   └── reranker.py              # Reranking models
+│   ├── generation/
+│   │   └── generator.py             # LLM generation
+│   ├── evaluation/
+│   │   └── evaluator.py             # RAGAS evaluation
+│   ├── logging/
+│   │   ├── logger.py                # Logging setup
+│   │   └── mlflow_tracker.py        # MLFlow tracking
 │   ├── utils/
-│   │   ├── helpers.py           # Utility functions
-│   │   └── __init__.py
-│   └── __init__.py
-├── frond-end/                   # HTML frontend
-│   ├── index.html
-│   ├── styles.css
-│   └── script.js
-├── front-end-streamlit/         # Streamlit dashboard
-│   └── app.py
+│   │   └── helpers.py               # Utility functions
+│   ├── api/
+│   │   └── main.py                  # FastAPI application
+│   └── rag_system.py                # Main orchestrator
 ├── data/
-│   └── chroma_db/               # Persistent vector store
-├── logs/                        # Application logs
-├── mlruns/                      # MLFlow experiments
-├── main.py                      # FastAPI server entry point
-├── example.py                   # Library usage example
-├── example2.py                  # Multi-document ingestion test
-├── run_evaluation_experiment.py # Evaluation runner
-├── requirements.txt             # Dependencies
-├── README.md                    # This file
-└── API_DOCUMENTATION.md         # Detailed API docs
+│   └── chroma_db/                   # Persistent vector store
+├── logs/
+│   └── rag_system.log               # Application logs
+├── mlruns/                          # MLFlow experiments
+├── main.py                          # Entry point
+├── example.py                       # Example usage
+├── requirements.txt                 # Python dependencies
+└── README.md                        # This file
 ```
 
 ## 🔍 Detailed Usage Examples
@@ -489,61 +404,68 @@ class CustomReranker(Reranker):
         pass
 ```
 
-## Monitoring & Observability
+## 📈 Monitoring & Logging
+
+### Log Levels
+
+```python
+# In app/config/settings.py
+LOG_LEVEL = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+```
+
+### View Logs
+
+```bash
+# Real-time logs
+tail -f logs/rag_system.log
+
+# Grep for errors
+grep "ERROR" logs/rag_system.log
+```
 
 ### MLFlow Dashboard
 
 ```bash
-mlflow ui --backend-store-uri mlruns
+cd /path/to/rag-assistant-fastapi
+mlflow ui
 # Visit http://localhost:5000
 ```
 
-Tracks experiments, parameters, metrics, and artifacts for all operations.
+## 🔐 Security Considerations
 
-### Logging
+1. **Input Validation**: All inputs are validated using Pydantic
+2. **CORS**: Configured for cross-origin requests
+3. **File Upload**: Temporary files are cleaned up after processing
+4. **Environment Variables**: Use `.env` for sensitive configurations
 
-Logs are written to `logs/rag_system.log` with configurable levels.
+## 📄 License
 
-```bash
-# View recent logs
-tail -f logs/rag_system.log
+This project is licensed under the MIT License.
 
-# Search for errors
-grep "ERROR" logs/rag_system.log
-```
+## 🎯 Future Enhancements
 
-## Security
+- [ ] Advanced caching strategies
+- [ ] Streaming responses
+- [ ] Multi-language support
+- [ ] Graph-based retrieval
+- [ ] Semantic caching
+- [ ] Query rewriting
+- [ ] Chain-of-thought prompting
+- [ ] Ensemble models
+- [ ] Real-time indexing
 
-- Input validation with Pydantic
-- CORS configuration
-- Temporary file cleanup
-- Environment variable usage for secrets
-- No hardcoded credentials
+## 📚 References
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make changes with tests
-4. Submit a pull request
-
-## License
-
-MIT License - see LICENSE file for details.
-
-## Acknowledgments
-
-- [FastAPI](https://fastapi.tiangolo.com/) for the web framework
-- [ChromaDB](https://www.trychroma.com/) for vector storage
-- [Sentence Transformers](https://www.sbert.net/) for embeddings
-- [Hugging Face](https://huggingface.co/) for models
-- [RAGAS](https://docs.ragas.io/) for evaluation
-- [MLFlow](https://mlflow.org/) for tracking
-- [Streamlit](https://streamlit.io/) for the dashboard
+- [Sentence Transformers](https://www.sbert.net/)
+- [ChromaDB Documentation](https://docs.trychroma.com/)
+- [Hugging Face Transformers](https://huggingface.co/docs/transformers/)
+- [RAGAS Framework](https://docs.ragas.io/)
+- [MLFlow Documentation](https://mlflow.org/docs/)
+- [FastAPI](https://fastapi.tiangolo.com/)
 
 ---
 
-**Version**: 1.0.0  
-**Last Updated**: March 9, 2026
+**Last Updated**: March 7, 2026  
+**Version**: 1.0.0
 
 
