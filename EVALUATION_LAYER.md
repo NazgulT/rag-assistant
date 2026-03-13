@@ -37,16 +37,16 @@ The evaluation layer is built around the `RAGASExperiment` class, which orchestr
 
 ```mermaid
 flowchart TD
-    A[Input CSV (question, expected_answer)] -->|load_evaluation_dataset| B[RAGASExperiment]
+    A["Input CSV (question, expected_answer)"] -->|load_evaluation_dataset| B[RAGASExperiment]
     B -->|for each sample| C[RAGSystem.answer_query]
     C --> D[Generated answer + docs]
     D -->|evaluate_rag_response| E[RAGAS metrics]
-    E --> F[Results row (CSV/MLflow)]
+    E --> F["Results row (CSV/MLflow)"]
     F --> G[Results output file + MLflow]
 
     subgraph Optional MLflow
       B --> ML[MLFlowTracker]
-      ML --> G
+      ML --> G[Results output file + MLflow]
     end
 
     style A fill:#f9f,stroke:#333,stroke-width:1px
