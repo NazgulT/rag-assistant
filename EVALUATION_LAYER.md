@@ -4,7 +4,7 @@ This document describes the evaluation layer used in the `rag-assistant-fastapi`
 
 ---
 
-## 🧠 Architecture Outline
+## Architecture Outline
 
 The evaluation layer is built around the `RAGASExperiment` class, which orchestrates:
 
@@ -22,18 +22,18 @@ The evaluation layer is built around the `RAGASExperiment` class, which orchestr
 
 ---
 
-## ✅ Main Features
+## Main Features
 
-- ✅ **Batch evaluation** from a CSV dataset
-- ✅ **Synchronous and asynchronous** execution modes
-- ✅ **Per-sample logging** (including errors) and post-run summary
-- ✅ **Configurable metric weights** for a unified score
-- ✅ **MLflow integration** (runs, nested runs, metrics, artifacts)
-- ✅ **Automatic error handling** for evaluation failures
+- **Batch evaluation** from a CSV dataset
+- **Synchronous and asynchronous** execution modes
+- **Per-sample logging** (including errors) and post-run summary
+- **Configurable metric weights** for a unified score
+- **MLflow integration** (runs, nested runs, metrics, artifacts)
+- **Automatic error handling** for evaluation failures
 
 ---
 
-## 🔁 Data Flow (Mermaid)
+## 🔁 Data Flow
 
 ```mermaid
 flowchart TD
@@ -58,7 +58,7 @@ flowchart TD
 
 ---
 
-## 🏗 Implementation Overview
+## Implementation Overview
 
 ### 1) Dataset Loading
 
@@ -125,32 +125,8 @@ python run_evaluation_experiment.py --output ragas_evals_v2 --async --concurrenc
 
 ---
 
-## 🔧 Further Improvements
 
-### ✅ Harden evaluation input schema
-- Validate that dataset rows include required fields
-- Fail fast with a clear message if the CSV is malformed
-
-### ✅ Add configurable metric weights
-- Expose weights through CLI options or config file
-
-### ✅ Add structured logging for errors
-- Persist error type + stack trace per sample
-
-### ✅ More robust context sizing
-- Automatically choose top `k` docs based on retrieval score
-- Make `k` a configurable parameter
-
-### ✅ Auto-retry on transient failures
-- Retry evaluation steps on transient network or LLM failures
-
-### ✅ Add unit tests
-- Test `evaluate_rag_response()` output shapes and error handling
-- Test dataset loading and malformed CSV conditions
-
----
-
-## 🧩 Where to Look in Code
+## Where to Look in Code
 
 - `evaluation_experiment.py` → main evaluation orchestration
 - `app/rag_system.py` → RAG query / retrieval implementation
