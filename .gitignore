@@ -87,7 +87,7 @@ docs/_build/
 Thumbs.db
 
 # MD files
-*.md
+Markdown_files/
 
 #Bash
 *.sh

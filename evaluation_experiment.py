@@ -101,27 +101,40 @@ class RAGASExperiment:
             Dict[str, Any]: Dictionary containing evaluation metric scores.
         """
 
-        #Prepare dataset to RAGAS format
+        # Limit retrieved documents to top 5 to prevent large datasets
+        retrieved_docs = retrieved_docs[:5]
+
+        # Prepare dataset in correct RAGAS format
         data = {
-            "question": response.query,
-            "generated_answer": response.answer,
-            "expected_answer": expected_answer,
-            "retrieved_documents": retrieved_docs,      
+            "question": [response.query],
+            "answer": [response.answer],
+            "contexts": [retrieved_docs],
+            "ground_truth": [expected_answer],
         }
 
         dataset = Dataset.from_dict(data)
 
-        #Evaluate using RAGAS
-        # Run evaluation
-        result = evaluate(
-            dataset=dataset,
-            metrics=[
-                context_precision,
-                context_recall,
-                answer_relevancy,
-                faithfulness,
-            ],
-        )
+        # Evaluate using RAGAS with error handling
+        try:
+            result = evaluate(
+                dataset=dataset,
+                metrics=[
+                    context_precision,
+                    context_recall,
+                    answer_relevancy,
+                    faithfulness,
+                ],
+            )
+        except Exception as e:
+            logger.error(f"RAGAS evaluation failed: {str(e)}")
+            # Return default scores on failure
+            return {
+                "context_precision": 0.0,
+                "context_recall": 0.0,
+                "answer_relevancy": 0.0,
+                "faithfulness": 0.0,
+                "average_score": 0.0,
+            }
 
         unified_score = sum(
             result[metric] * weights[metric]
@@ -281,12 +294,12 @@ class RAGASExperiment:
 
                 print(f"Sample {idx} Retrieved Documents:")
                 for i, doc in enumerate(rag_response.retrieved_documents):
-                    print(f"  Doc {i}: {doc['content'][:100]}...")
+                    print(f"  Doc {i}: {doc.content[:100]}...")
 
                 eval_scores = self.evaluate_rag_response(
                     response=rag_response,
                     expected_answer=expected_answer,
-                    retrieved_docs=[doc["content"] for doc in rag_response.retrieved_documents],
+                    retrieved_docs=[doc.content for doc in rag_response.retrieved_documents],
                 )
 
                 print(f"Sample {idx} Evaluation Scores:")
@@ -330,13 +343,13 @@ class RAGASExperiment:
                         "total_time": rag_response.total_time,
                     })
                     self.mlflow_tracker.log_artifacts({
-                        "question": rag_response.question,
+                        "question": rag_response.query,
                         "answer": rag_response.answer,
                         "status": status,
                         "retrieved_docs_count": len(rag_response.retrieved_documents),
-                        "retrieved_docs": [doc["content"][:100] for doc in rag_response.retrieved_documents],
+                        "retrieved_docs": [doc.content[:100] for doc in rag_response.retrieved_documents],
                         "reranked_docs_count": len(rag_response.reranked_documents),
-                        "reranked_docs": [doc["content"][:100] for doc in rag_response.reranked_documents], 
+                        "reranked_docs": [doc.content[:100] for doc in rag_response.reranked_documents], 
                     })
 
                     run_id = self.mlflow_tracker.get_run_id()
